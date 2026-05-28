@@ -5,6 +5,8 @@
                 class="card-image"
                 :src="item.coverImage || item.images?.[0] || placeholderImage"
                 mode="aspectFill"
+                lazy-load
+                :loading-flag="true"
             />
             <view class="image-tags">
                 <view class="tag trade-tag" :class="item.tradeType">

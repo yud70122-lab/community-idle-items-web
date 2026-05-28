@@ -187,6 +187,42 @@
                 "navigationBarTextStyle": "black",
                 "navigationBarBackgroundColor": "#ffffff"
             }
+        },
+        {
+            "path": "pages/exchange_confirm/exchange_confirm",
+            "style": {
+                "navigationBarTitleText": "交换确认",
+                "navigationStyle": "custom",
+                "navigationBarTextStyle": "black",
+                "navigationBarBackgroundColor": "#ffffff"
+            }
+        },
+        {
+            "path": "pages/order_confirm/order_confirm",
+            "style": {
+                "navigationBarTitleText": "订单确认",
+                "navigationStyle": "custom",
+                "navigationBarTextStyle": "black",
+                "navigationBarBackgroundColor": "#ffffff"
+            }
+        },
+        {
+            "path": "pages/chat_list/chat_list",
+            "style": {
+                "navigationBarTitleText": "消息",
+                "navigationStyle": "custom",
+                "navigationBarTextStyle": "black",
+                "navigationBarBackgroundColor": "#ffffff"
+            }
+        },
+        {
+            "path": "pages/chat_room/chat_room",
+            "style": {
+                "navigationBarTitleText": "聊天",
+                "navigationStyle": "custom",
+                "navigationBarTextStyle": "black",
+                "navigationBarBackgroundColor": "#ffffff"
+            }
         }
     ],
     "globalStyle": {

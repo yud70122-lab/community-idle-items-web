@@ -17,8 +17,16 @@
                     <text class="nickname">{{ userInfo?.nickname || '点击设置昵称' }}</text>
                     <text class="user-id">ID: {{ userInfo?.id || '---' }}</text>
                 </view>
-                <view class="edit-btn" @click="goToEdit">
-                    <text class="edit-icon">⚙️</text>
+                <view class="header-actions">
+                    <view class="message-btn" @click="goToChatList">
+                        <text class="message-icon">💬</text>
+                        <view class="message-badge" v-if="unreadCount > 0">
+                            <text class="badge-text">{{ unreadCount > 99 ? '99+' : unreadCount }}</text>
+                        </view>
+                    </view>
+                    <view class="edit-btn" @click="goToEdit">
+                        <text class="edit-icon">⚙️</text>
+                    </view>
                 </view>
             </view>
 
@@ -70,6 +78,17 @@
             </view>
 
             <view class="menu-group">
+                <view class="menu-item" @click="goToChatList">
+                    <view class="menu-icon-wrapper blue">
+                        <text class="menu-icon">💬</text>
+                    </view>
+                    <text class="menu-title">我的消息</text>
+                    <view class="menu-badge" v-if="unreadCount > 0">
+                        <text class="badge-text">{{ unreadCount > 99 ? '99+' : unreadCount }}</text>
+                    </view>
+                    <text class="menu-arrow">›</text>
+                </view>
+
                 <view class="menu-item" @click="goToMyPublish">
                     <view class="menu-icon-wrapper orange">
                         <text class="menu-icon">📦</text>
@@ -139,7 +158,8 @@ export default {
     data() {
         return {
             userStore: useUserStore(),
-            violationCount: 0
+            violationCount: 0,
+            unreadCount: 0
         }
     },
     computed: {
@@ -150,10 +170,12 @@ export default {
     onLoad() {
         this.loadUserInfo()
         this.loadViolationCount()
+        this.loadUnreadCount()
     },
     onShow() {
         this.loadUserInfo()
         this.loadViolationCount()
+        this.loadUnreadCount()
     },
     methods: {
         async loadUserInfo() {
@@ -173,6 +195,19 @@ export default {
                 console.error('Load violation count failed:', error)
                 this.violationCount = 2
             }
+        },
+
+        async loadUnreadCount() {
+            try {
+                const res = await http.get('/api/chat/unread-count')
+                this.unreadCount = res.count || 0
+            } catch (error) {
+                console.error('Load unread count failed:', error)
+            }
+        },
+
+        goToChatList() {
+            uni.navigateTo({ url: '/pages/chat_list/chat_list' })
         },
 
         goToEdit() {
@@ -309,6 +344,48 @@ export default {
     display: block;
     font-size: 24rpx;
     color: rgba(255, 255, 255, 0.8);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+}
+
+.message-btn {
+    position: relative;
+    width: 60rpx;
+    height: 60rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+}
+
+.message-icon {
+    font-size: 30rpx;
+}
+
+.message-badge {
+    position: absolute;
+    top: -8rpx;
+    right: -8rpx;
+    min-width: 32rpx;
+    height: 32rpx;
+    padding: 0 6rpx;
+    background: #ff4757;
+    border-radius: 16rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2rpx solid #667eea;
+}
+
+.message-badge .badge-text {
+    font-size: 18rpx;
+    color: #ffffff;
+    font-weight: 500;
 }
 
 .edit-btn {

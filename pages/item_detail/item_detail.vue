@@ -1,6 +1,24 @@
 <template>
     <view class="item-detail-page">
-        <view class="swiper-section" v-if="detail">
+        <Skeleton
+            v-if="loading"
+            :visible="loading"
+            :show-tags="true"
+            :tag-count="3"
+            :info-rows="3"
+            :show-bottom-bar="true"
+            :btn-count="3"
+        />
+
+        <ErrorPage
+            v-else-if="!detail"
+            :type="errorType"
+            @retry="loadDetail"
+            @back-home="goHome"
+        />
+
+        <template v-else>
+        <view class="swiper-section">
             <swiper
                 class="image-swiper"
                 :indicator-dots="mediaList.length > 1"
@@ -19,6 +37,7 @@
                         class="swiper-media"
                         :src="item.url"
                         mode="aspectFill"
+                        lazy-load
                         @click="previewImage(index)"
                     />
                     <video
@@ -46,7 +65,7 @@
             </view>
         </view>
 
-        <view class="content-wrapper" v-if="detail">
+        <view class="content-wrapper">
             <view class="price-section">
                 <view class="price-wrapper" v-if="detail.price && detail.price > 0">
                     <text class="price-symbol">¥</text>
@@ -138,17 +157,6 @@
             />
         </view>
 
-        <view class="loading-state" v-if="loading">
-            <view class="spinner"></view>
-            <text class="loading-text">加载中...</text>
-        </view>
-
-        <view class="error-state" v-if="!loading && !detail">
-            <text class="error-icon">😕</text>
-            <text class="error-text">物品不存在或已下架</text>
-            <button class="retry-btn" @click="loadDetail">重新加载</button>
-        </view>
-
         <view class="bottom-bar" v-if="detail && detail.status === 'online'">
             <view class="bar-actions">
                 <view class="action-item" @click="toggleFavorite">
@@ -164,7 +172,18 @@
                 <button class="btn btn-secondary" @click="contactSeller">
                     <text class="btn-text">联系卖家</text>
                 </button>
-                <button class="btn btn-primary" @click="buyNow">
+                <button
+                    v-if="canExchange"
+                    class="btn btn-exchange"
+                    @click="wantExchange"
+                >
+                    <text class="btn-text">我想要</text>
+                </button>
+                <button
+                    v-if="canBuy"
+                    class="btn btn-primary"
+                    @click="buyNow"
+                >
                     <text class="btn-text">立即购买</text>
                 </button>
             </view>
@@ -184,21 +203,30 @@
             @follow-change="onFollowChange"
             @send-message="onSendMessage"
         />
+        </template>
     </view>
 </template>
 
 <script>
 import http from '@/common/interceptor.js'
+import { useUserStore } from '@/store/user.js'
+import { handleShareCallback } from '@/utils/share.js'
 import RecommendList from '@/components/RecommendList/RecommendList.vue'
 import PanoramaViewer from '@/components/PanoramaViewer/PanoramaViewer.vue'
 import SellerCreditPopup from '@/components/SellerCreditPopup/SellerCreditPopup.vue'
+import Skeleton from '@/components/Skeleton/Skeleton.vue'
+import ErrorPage from '@/components/ErrorPage/ErrorPage.vue'
+
+const MIN_CREDIT_POINTS_FOR_EXCHANGE = 600
 
 export default {
     name: 'ItemDetail',
     components: {
         RecommendList,
         PanoramaViewer,
-        SellerCreditPopup
+        SellerCreditPopup,
+        Skeleton,
+        ErrorPage
     },
     data() {
         return {
@@ -214,6 +242,9 @@ export default {
         }
     },
     computed: {
+        userStore() {
+            return useUserStore()
+        },
         isOnline() {
             return this.detail && this.detail.status === 'online'
         },
@@ -225,6 +256,28 @@ export default {
         },
         panoramaImages() {
             return this.detail?.panoramaImages || []
+        },
+        isOwner() {
+            if (!this.detail?.seller?.id || !this.userStore.userInfo?.id) return false
+            return this.detail.seller.id === this.userStore.userInfo.id
+        },
+        canExchange() {
+            if (!this.detail) return false
+            if (this.isOwner) return false
+            const tradeType = this.detail.tradeType
+            return tradeType === 'exchange' || tradeType === 'both'
+        },
+        canBuy() {
+            if (!this.detail) return false
+            if (this.isOwner) return false
+            const tradeType = this.detail.tradeType
+            return tradeType === 'sell' || tradeType === 'both'
+        },
+        errorType() {
+            if (!this.detail) {
+                return 'off_shelf'
+            }
+            return 'not_found'
         }
     },
     onLoad(options) {
@@ -233,17 +286,44 @@ export default {
             this.loadDetail()
         }
     },
-    onShareAppMessage() {
-        return {
+    onShareAppMessage(res) {
+        const shareData = {
             title: this.detail?.title || '快来看看这个闲置物品',
             path: `/pages/item_detail/item_detail?id=${this.itemId}`,
-            imageUrl: this.mediaList?.[0]?.url || this.detail?.coverImage
+            imageUrl: this.mediaList?.[0]?.url || this.detail?.coverImage,
+            itemId: this.itemId,
+            shareType: 'item',
+            extra: {
+                shareFrom: res?.from || 'menu',
+                sellerId: this.detail?.seller?.id
+            }
+        }
+
+        handleShareCallback(shareData)
+
+        return {
+            title: shareData.title,
+            path: shareData.path,
+            imageUrl: shareData.imageUrl
         }
     },
     onShareTimeline() {
-        return {
+        const shareData = {
             title: this.detail?.title || '快来看看这个闲置物品',
-            imageUrl: this.mediaList?.[0]?.url || this.detail?.coverImage
+            path: `/pages/item_detail/item_detail?id=${this.itemId}`,
+            imageUrl: this.mediaList?.[0]?.url || this.detail?.coverImage,
+            itemId: this.itemId,
+            shareType: 'timeline',
+            extra: {
+                sellerId: this.detail?.seller?.id
+            }
+        }
+
+        handleShareCallback(shareData)
+
+        return {
+            title: shareData.title,
+            imageUrl: shareData.imageUrl
         }
     },
     methods: {
@@ -536,17 +616,113 @@ export default {
         },
 
         contactSeller() {
-            uni.showToast({
-                title: '联系卖家功能开发中',
-                icon: 'none'
+            if (!this.validateLogin()) return
+            if (this.isOwner) {
+                uni.showToast({
+                    title: '不能联系自己',
+                    icon: 'none'
+                })
+                return
+            }
+
+            const seller = this.detail?.seller
+            uni.navigateTo({
+                url: `/pages/chat_room/chat_room?peerId=${seller?.id}&peerName=${encodeURIComponent(seller?.nickname || '用户')}&peerAvatar=${encodeURIComponent(seller?.avatar || '')}`
             })
         },
 
-        buyNow() {
-            uni.showToast({
-                title: '购买功能开发中',
-                icon: 'none'
-            })
+        async wantExchange() {
+            if (!this.validateLogin()) return
+            if (!this.validateCredit()) return
+            if (this.isOwner) {
+                uni.showToast({
+                    title: '不能交换自己的物品',
+                    icon: 'none'
+                })
+                return
+            }
+
+            try {
+                await http.post('/api/exchange/check', {
+                    itemId: this.itemId
+                })
+                uni.navigateTo({
+                    url: `/pages/exchange_confirm/exchange_confirm?itemId=${this.itemId}`
+                })
+            } catch (error) {
+                console.error('Exchange check failed:', error)
+                uni.showToast({
+                    title: error.message || '无法发起交换，请稍后重试',
+                    icon: 'none'
+                })
+            }
+        },
+
+        validateLogin() {
+            if (!this.userStore.isLoggedIn) {
+                uni.showModal({
+                    title: '需要登录',
+                    content: '请先登录后再进行操作',
+                    confirmText: '去登录',
+                    cancelText: '取消',
+                    success: (res) => {
+                        if (res.confirm) {
+                            uni.navigateTo({
+                                url: '/pages/login/login'
+                            })
+                        }
+                    }
+                })
+                return false
+            }
+            return true
+        },
+
+        validateCredit() {
+            const userCredit = this.userStore.userInfo?.creditPoints || 0
+            if (userCredit < MIN_CREDIT_POINTS_FOR_EXCHANGE) {
+                uni.showModal({
+                    title: '信用分不足',
+                    content: `交换需要${MIN_CREDIT_POINTS_FOR_EXCHANGE}信用分，您当前信用分为${userCredit}分。请完成任务提升信用分后再尝试。`,
+                    confirmText: '去提升',
+                    cancelText: '取消',
+                    success: (res) => {
+                        if (res.confirm) {
+                            uni.navigateTo({
+                                url: '/pages/task/task'
+                            })
+                        }
+                    }
+                })
+                return false
+            }
+            return true
+        },
+
+        async buyNow() {
+            if (!this.validateLogin()) return
+            if (this.isOwner) {
+                uni.showToast({
+                    title: '不能购买自己的物品',
+                    icon: 'none'
+                })
+                return
+            }
+
+            try {
+                await http.post('/api/order/check', {
+                    itemId: this.itemId
+                })
+                uni.navigateTo({
+                    url: `/pages/order_confirm/order_confirm?itemId=${this.itemId}`
+                })
+            } catch (error) {
+                console.error('Order check failed:', error)
+                uni.showToast({
+                    title: error.message || '无法创建订单，请稍后重试',
+                    icon: 'none'
+                })
+            }
         },
 
         goToSellerHome() {
@@ -565,6 +741,12 @@ export default {
 
         goBack() {
             uni.navigateBack()
+        },
+
+        goHome() {
+            uni.switchTab({
+                url: '/pages/index/index'
+            })
         }
     }
 }
@@ -923,57 +1105,6 @@ export default {
     font-weight: 600;
 }
 
-.loading-state,
-.error-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 200rpx 40rpx;
-}
-
-.spinner {
-    width: 60rpx;
-    height: 60rpx;
-    border: 4rpx solid rgba(102, 126, 234, 0.2);
-    border-top-color: #667eea;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 20rpx;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-.loading-text,
-.error-text {
-    font-size: 26rpx;
-    color: #999;
-}
-
-.error-icon {
-    font-size: 100rpx;
-    margin-bottom: 20rpx;
-}
-
-.retry-btn {
-    margin-top: 30rpx;
-    min-width: 200rpx;
-    height: 72rpx;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 36rpx;
-    border: none;
-
-    &::after { border: none; }
-}
-
-.retry-btn .btn-text {
-    color: #ffffff;
-    font-size: 26rpx;
-    font-weight: 500;
-}
-
 .bottom-bar {
     position: fixed;
     left: 0;
@@ -1037,6 +1168,11 @@ export default {
 
     &.btn-primary {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .btn-text { color: #ffffff; }
+    }
+
+    &.btn-exchange {
+        background: linear-gradient(135deg, #07c160 0%, #10b981 100%);
         .btn-text { color: #ffffff; }
     }
 }

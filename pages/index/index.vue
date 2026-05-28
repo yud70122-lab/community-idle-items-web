@@ -1,5 +1,12 @@
 <template>
     <view class="index-page">
+        <ListSkeleton
+            v-if="loading && itemList.length === 0"
+            :visible="loading && itemList.length === 0"
+            :show-header="true"
+        />
+
+        <template v-else>
         <view class="page-header">
             <view class="header-top">
                 <view class="header-title">
@@ -81,17 +88,20 @@
             <text class="fab-icon">+</text>
             <text class="fab-text">发布</text>
         </view>
+        </template>
     </view>
 </template>
 
 <script>
 import http from '@/common/interceptor.js'
 import ItemCard from '@/components/ItemCard/ItemCard.vue'
+import ListSkeleton from '@/components/ListSkeleton/ListSkeleton.vue'
 
 export default {
     name: 'IndexPage',
     components: {
-        ItemCard
+        ItemCard,
+        ListSkeleton
     },
     data() {
         return {

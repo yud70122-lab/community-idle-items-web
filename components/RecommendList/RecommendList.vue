@@ -16,6 +16,7 @@
                     class="item-image"
                     :src="item.coverImage || item.images?.[0] || placeholderImage"
                     mode="aspectFill"
+                    lazy-load
                 />
                 <view class="item-info">
                     <text class="item-title">{{ item.title }}</text>

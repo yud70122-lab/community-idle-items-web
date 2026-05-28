@@ -1,0 +1,170 @@
+{
+  "settings": {
+    "number_of_shards": 3,
+    "number_of_replicas": 2,
+    "refresh_interval": "1s",
+    "analysis": {
+      "analyzer": {
+        "ik_max_word": {
+          "type": "custom",
+          "tokenizer": "ik_max_word",
+          "filter": ["lowercase"]
+        },
+        "ik_smart": {
+          "type": "custom",
+          "tokenizer": "ik_smart",
+          "filter": ["lowercase"]
+        },
+        "pinyin_analyzer": {
+          "type": "custom",
+          "tokenizer": "ik_smart",
+          "filter": ["pinyin_filter", "lowercase"]
+        }
+      },
+      "filter": {
+        "pinyin_filter": {
+          "type": "pinyin",
+          "keep_first_letter": true,
+          "keep_full_pinyin": true,
+          "keep_original": true,
+          "limit_first_letter_length": 16,
+          "lowercase": true
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "title": {
+        "type": "text",
+        "analyzer": "ik_max_word",
+        "search_analyzer": "ik_smart",
+        "fields": {
+          "pinyin": {
+            "type": "text",
+            "analyzer": "pinyin_analyzer"
+          }
+        }
+      },
+      "description": {
+        "type": "text",
+        "analyzer": "ik_max_word",
+        "search_analyzer": "ik_smart"
+      },
+      "category": {
+        "type": "keyword"
+      },
+      "categoryId": {
+        "type": "keyword"
+      },
+      "tags": {
+        "type": "text",
+        "analyzer": "ik_smart",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "price": {
+        "type": "double"
+      },
+      "originalPrice": {
+        "type": "double"
+      },
+      "condition": {
+        "type": "keyword"
+      },
+      "tradeType": {
+        "type": "keyword"
+      },
+      "status": {
+        "type": "keyword"
+      },
+      "coverImage": {
+        "type": "keyword",
+        "index": false
+      },
+      "images": {
+        "type": "keyword",
+        "index": false
+      },
+      "panoramaImage": {
+        "type": "keyword",
+        "index": false
+      },
+      "userId": {
+        "type": "keyword"
+      },
+      "seller": {
+        "properties": {
+          "id": {
+            "type": "keyword"
+          },
+          "nickname": {
+            "type": "text",
+            "analyzer": "ik_smart"
+          },
+          "avatar": {
+            "type": "keyword",
+            "index": false
+          },
+          "creditLevel": {
+            "type": "keyword"
+          },
+          "creditPoints": {
+            "type": "integer"
+          },
+          "positiveRate": {
+            "type": "keyword"
+          },
+          "exchangeCount": {
+            "type": "integer"
+          },
+          "publishCount": {
+            "type": "integer"
+          }
+        }
+      },
+      "location": {
+        "type": "text",
+        "analyzer": "ik_smart"
+      },
+      "address": {
+        "type": "text",
+        "analyzer": "ik_smart"
+      },
+      "geoPoint": {
+        "type": "geo_point"
+      },
+      "latitude": {
+        "type": "double"
+      },
+      "longitude": {
+        "type": "double"
+      },
+      "viewCount": {
+        "type": "integer"
+      },
+      "favoriteCount": {
+        "type": "integer"
+      },
+      "createTime": {
+        "type": "date",
+        "format": "epoch_millis||yyyy-MM-dd HH:mm:ss"
+      },
+      "updateTime": {
+        "type": "date",
+        "format": "epoch_millis||yyyy-MM-dd HH:mm:ss"
+      },
+      "suggest": {
+        "type": "completion",
+        "analyzer": "ik_smart",
+        "search_analyzer": "ik_smart"
+      }
+    }
+  }
+}

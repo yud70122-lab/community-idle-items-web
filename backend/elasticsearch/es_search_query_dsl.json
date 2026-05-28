@@ -1,0 +1,122 @@
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "bool": {
+            "should": [
+              {
+                "multi_match": {
+                  "query": "{{keyword}}",
+                  "fields": [
+                    "title^3",
+                    "title.pinyin^2",
+                    "description^1.5",
+                    "tags^2",
+                    "category^1.5",
+                    "location^1",
+                    "seller.nickname^1"
+                  ],
+                  "type": "best_fields",
+                  "analyzer": "ik_smart",
+                  "minimum_should_match": "80%"
+                }
+              },
+              {
+                "match_phrase": {
+                  "title": {
+                    "query": "{{keyword}}",
+                    "boost": 5,
+                    "slop": 2
+                  }
+                }
+              },
+              {
+                "match": {
+                  "tags.keyword": {
+                    "query": "{{keyword}}",
+                    "boost": 4
+                  }
+                }
+              }
+            ],
+            "minimum_should_match": 1
+          }
+        }
+      ],
+      "filter": [
+        {
+          "term": {
+            "status": "online"
+          }
+        },
+        {
+          "range": {
+            "price": {
+              "gte": {{minPrice}},
+              "lte": {{maxPrice}}
+            }
+          }
+        },
+        {
+          "term": {
+            "condition": "{{condition}}"
+          }
+        },
+        {
+          "term": {
+            "tradeType": "{{tradeType}}"
+          }
+        },
+        {
+          "term": {
+            "categoryId": "{{categoryId}}"
+          }
+        },
+        {
+          "geo_distance": {
+            "distance": "{{distance}}km",
+            "geoPoint": {
+              "lat": {{userLat}},
+              "lon": {{userLon}}
+            }
+          }
+        }
+      ]
+    }
+  },
+  "highlight": {
+    "pre_tags": ["<span class=\"highlight-keyword\">"],
+    "post_tags": ["</span>"],
+    "require_field_match": false,
+    "fields": {
+      "title": {
+        "number_of_fragments": 0,
+        "order": "score"
+      },
+      "description": {
+        "number_of_fragments": 1,
+        "fragment_size": 100,
+        "order": "score"
+      },
+      "tags": {
+        "number_of_fragments": 0,
+        "order": "score"
+      }
+    }
+  },
+  "sort": [
+    {
+      "_score": {
+        "order": "desc"
+      }
+    },
+    {
+      "createTime": {
+        "order": "desc"
+      }
+    }
+  ],
+  "from": {{from}},
+  "size": {{size}}
+}

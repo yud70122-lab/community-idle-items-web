@@ -1,5 +1,14 @@
 <template>
     <view class="search-result-page">
+        <ListSkeleton
+            v-if="loading"
+            :visible="loading"
+            :show-header="false"
+            :category-count="0"
+            :item-count="6"
+        />
+
+        <template v-else>
         <view class="search-header">
             <view class="back-btn" @click="goBack">
                 <text class="back-icon">‹</text>
@@ -65,11 +74,7 @@
                 <text class="no-more-text">— 没有更多了 —</text>
             </view>
         </view>
-
-        <view class="loading-state" v-if="loading">
-            <view class="spinner"></view>
-            <text class="loading-text">搜索中...</text>
-        </view>
+        </template>
     </view>
 </template>
 
@@ -77,11 +82,13 @@
 import http from '@/common/interceptor.js'
 import HistoryManager from '@/common/HistoryManager.js'
 import ItemCard from '@/components/ItemCard/ItemCard.vue'
+import ListSkeleton from '@/components/ListSkeleton/ListSkeleton.vue'
 
 export default {
     name: 'SearchResult',
     components: {
-        ItemCard
+        ItemCard,
+        ListSkeleton
     },
     data() {
         return {
